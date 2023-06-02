@@ -312,12 +312,14 @@ def serialize_decision_tree(model):
         'feature_importances_': model.feature_importances_.tolist(),
         'max_features_': model.max_features_,
         'n_classes_': int(model.n_classes_),
-        'n_features_': model.n_features_,
+        'n_features_in_': model.n_features_in_,
         'n_outputs_': model.n_outputs_,
         'tree_': tree,
         'classes_': model.classes_.tolist(),
         'params': model.get_params()
     }
+    if hasattr(model, "feature_names_in_"):
+        serialized_model["feature_names_in_"] = model.feature_names_in_.tolist()
 
 
     tree_dtypes = []
@@ -335,10 +337,21 @@ def deserialize_decision_tree(model_dict):
     deserialized_model.classes_ = np.array(model_dict['classes_'])
     deserialized_model.max_features_ = model_dict['max_features_']
     deserialized_model.n_classes_ = model_dict['n_classes_']
-    deserialized_model.n_features_ = model_dict['n_features_']
+    deserialized_model.n_features_in_ = model_dict['n_features_in_']
+    try:
+        deserialized_model.feature_names_in_ = np.array(
+            model_dict['feature_names_in_']
+        )
+    except KeyError:
+        pass
     deserialized_model.n_outputs_ = model_dict['n_outputs_']
 
-    tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_'], model_dict['n_classes_'], model_dict['n_outputs_'])
+    tree = deserialize_tree(
+        model_dict['tree_'],
+        model_dict['n_features_in_'],
+        model_dict['n_classes_'],
+        model_dict['n_outputs_'],
+    )
     deserialized_model.tree_ = tree
 
     return deserialized_model
@@ -414,13 +427,15 @@ def serialize_random_forest(model):
         'max_features': model.max_features,
         'max_leaf_nodes': model.max_leaf_nodes,
         'min_impurity_decrease': model.min_impurity_decrease,
-        'min_impurity_split': model.min_impurity_split,
-        'n_features_': model.n_features_,
+        'n_features_in_': model.n_features_in_,
         'n_outputs_': model.n_outputs_,
         'classes_': model.classes_.tolist(),
         'estimators_': [serialize_decision_tree(decision_tree) for decision_tree in model.estimators_],
         'params': model.get_params()
     }
+    if hasattr(model, "feature_names_in_"):
+        serialized_model["feature_names_in_"] = model.feature_names_in_.tolist()
+
 
     if 'oob_score_' in model.__dict__:
         serialized_model['oob_score_'] = model.oob_score_
@@ -441,7 +456,8 @@ def deserialize_random_forest(model_dict):
     model.estimators_ = np.array(estimators)
 
     model.classes_ = np.array(model_dict['classes_'])
-    model.n_features_ = model_dict['n_features_']
+    model.n_features_in_ = model_dict['n_features_in_']
+    model.feature_names_in_ = model_dict['feature_names_in_']
     model.n_outputs_ = model_dict['n_outputs_']
     model.max_depth = model_dict['max_depth']
     model.min_samples_split = model_dict['min_samples_split']
@@ -450,8 +466,12 @@ def deserialize_random_forest(model_dict):
     model.max_features = model_dict['max_features']
     model.max_leaf_nodes = model_dict['max_leaf_nodes']
     model.min_impurity_decrease = model_dict['min_impurity_decrease']
-    model.min_impurity_split = model_dict['min_impurity_split']
-
+    try:
+        model.feature_names_in_ = np.array(
+            model_dict['feature_names_in_']
+        )
+    except KeyError:
+        pass
     if 'oob_score_' in model_dict:
         model.oob_score_ = model_dict['oob_score_']
     if 'oob_decision_function_' in model_dict:
