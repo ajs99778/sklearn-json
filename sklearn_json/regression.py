@@ -201,6 +201,8 @@ def serialize_decision_tree_regressor(model):
         'n_outputs_': model.n_outputs_,
         'tree_': tree
     }
+    if hasattr(model, "feature_names_in_"):
+        serialized_model["feature_names_in_"] = model.feature_names_in_.tolist()
 
     # serialized_model.
 
@@ -219,7 +221,12 @@ def deserialize_decision_tree_regressor(model_dict):
     deserialized_decision_tree.max_features_ = model_dict['max_features_']
     deserialized_decision_tree.n_features_ = model_dict['n_features_in_']
     deserialized_decision_tree.n_outputs_ = model_dict['n_outputs_']
-
+    try:
+        deserialized_model.feature_names_in_ = np.array(
+            model_dict['feature_names_in_']
+        )
+    except KeyError:
+        pass
     tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_in_'], 1, model_dict['n_outputs_'])
     deserialized_decision_tree.tree_ = tree
 
@@ -309,6 +316,8 @@ def serialize_random_forest_regressor(model):
         'estimators_': [serialize_decision_tree_regressor(decision_tree) for decision_tree in model.estimators_],
         'params': model.get_params()
     }
+    if hasattr(model, "feature_names_in_"):
+        serialized_model["feature_names_in_"] = model.feature_names_in_.tolist()
 
     if 'oob_score_' in model.__dict__:
         serialized_model['oob_score_'] = model.oob_score_
@@ -332,7 +341,13 @@ def deserialize_random_forest_regressor(model_dict):
     model.max_features = model_dict['max_features']
     model.max_leaf_nodes = model_dict['max_leaf_nodes']
     model.min_impurity_decrease = model_dict['min_impurity_decrease']
-
+    try:
+        model.feature_names_in_ = np.array(
+            model_dict['feature_names_in_']
+        )
+    except KeyError:
+        pass
+ 
     if 'oob_score_' in model_dict:
         model.oob_score_ = model_dict['oob_score_']
     if 'oob_prediction_' in model_dict:
