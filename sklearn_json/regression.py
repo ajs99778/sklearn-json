@@ -219,7 +219,10 @@ def deserialize_decision_tree_regressor(model_dict):
     deserialized_decision_tree = DecisionTreeRegressor()
 
     deserialized_decision_tree.max_features_ = model_dict['max_features_']
-    deserialized_decision_tree.n_features_ = model_dict['n_features_in_']
+    try:
+        deserialized_decision_tree.n_features_ = model_dict['n_features_in_']
+    except KeyError:
+        pass
     deserialized_decision_tree.n_outputs_ = model_dict['n_outputs_']
     try:
         deserialized_model.feature_names_in_ = np.array(
@@ -227,7 +230,10 @@ def deserialize_decision_tree_regressor(model_dict):
         )
     except KeyError:
         pass
-    tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_in_'], 1, model_dict['n_outputs_'])
+    try:
+        tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_in_'], 1, model_dict['n_outputs_'])
+    except KeyError:
+        tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_'], 1, model_dict['n_outputs_'])
     deserialized_decision_tree.tree_ = tree
 
     return deserialized_decision_tree
@@ -332,7 +338,10 @@ def deserialize_random_forest_regressor(model_dict):
     estimators = [deserialize_decision_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
     model.estimators_ = np.array(estimators)
 
-    model.n_features_in_ = model_dict['n_features_in_']
+    try:
+        model.n_features_in_ = model_dict['n_features_in_']
+    except KeyError:
+        model.n_features_in_ = model_dict['n_features_']
     model.n_outputs_ = model_dict['n_outputs_']
     model.max_depth = model_dict['max_depth']
     model.min_samples_split = model_dict['min_samples_split']
